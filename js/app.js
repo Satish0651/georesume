@@ -1,9 +1,10 @@
 (function () {
   "use strict";
 
-  let map;
-  let markers = {};
-  let pathLine;
+  window.map = null;
+  var map;
+  var markers = {};
+  var pathLine;
   let currentView = null;
   let currentTileLayer = null;
 
@@ -32,6 +33,7 @@
       zoomControl: true,
       attributionControl: false,
     });
+    window.map = map;
 
     var savedTheme = localStorage.getItem("georesume-theme") || "dark";
     var tileUrl = savedTheme === "light" ? LIGHT_TILES : DARK_TILES;
