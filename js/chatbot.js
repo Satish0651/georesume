@@ -284,8 +284,21 @@
 
   // ── Answer Engine ───────────────────────────────
 
+  var easterEggTriggers = ["konami", "secret", "magic", "open sesame", "easter egg", "surprise", "hidden"];
+
   function findAnswer(query) {
     var q = query.toLowerCase().replace(/[?!.,]/g, "");
+
+    for (var e = 0; e < easterEggTriggers.length; e++) {
+      if (q.indexOf(easterEggTriggers[e]) !== -1) {
+        triggerEasterEgg();
+        return {
+          answer: "🎉 <strong>You found the secret!</strong> Satish loves building creative GIS experiences. This confetti is powered by pure CSS — no libraries needed. Try asking something else, or just enjoy the show! 🚀",
+          mapId: null
+        };
+      }
+    }
+
     var bestMatch = null;
     var bestScore = 0;
 
@@ -314,6 +327,71 @@
       answer: "I don't have a specific answer for that, but you can explore Satish's full resume by scrolling through the sections, or try asking about his <strong>skills</strong>, <strong>experience</strong>, <strong>education</strong>, or <strong>certifications</strong>.",
       mapId: null
     };
+  }
+
+  // ── Easter Egg ─────────────────────────────────
+
+  function triggerEasterEgg() {
+    launchConfetti();
+    showEasterEggMessage();
+  }
+
+  function launchConfetti() {
+    var container = document.createElement("div");
+    container.className = "confetti-container";
+    document.body.appendChild(container);
+
+    var colors = ["#00d4ff", "#8b5cf6", "#00e676", "#ff6b35", "#f472b6", "#fbbf24", "#ef4444", "#3b82f6"];
+    var shapes = ["square", "circle", "triangle"];
+
+    for (var i = 0; i < 100; i++) {
+      var piece = document.createElement("div");
+      piece.className = "confetti-piece";
+      var color = colors[Math.floor(Math.random() * colors.length)];
+      var shape = shapes[Math.floor(Math.random() * shapes.length)];
+      var size = 6 + Math.random() * 10;
+      var left = Math.random() * 100;
+      var delay = Math.random() * 1.5;
+      var duration = 2 + Math.random() * 2;
+
+      piece.style.left = left + "%";
+      piece.style.width = size + "px";
+      piece.style.height = size + "px";
+      piece.style.background = color;
+      piece.style.animationDelay = delay + "s";
+      piece.style.animationDuration = duration + "s";
+
+      if (shape === "circle") {
+        piece.style.borderRadius = "50%";
+      } else if (shape === "triangle") {
+        piece.style.width = "0";
+        piece.style.height = "0";
+        piece.style.background = "transparent";
+        piece.style.borderLeft = (size / 2) + "px solid transparent";
+        piece.style.borderRight = (size / 2) + "px solid transparent";
+        piece.style.borderBottom = size + "px solid " + color;
+      }
+
+      container.appendChild(piece);
+    }
+
+    setTimeout(function () {
+      container.remove();
+    }, 5000);
+  }
+
+  function showEasterEggMessage() {
+    var msg = document.createElement("div");
+    msg.className = "easter-egg-msg";
+    msg.innerHTML = "<h3>🗺️ You Found It!</h3><p>Satish builds maps that tell stories.<br>This one's for you.</p>";
+    document.body.appendChild(msg);
+
+    setTimeout(function () {
+      msg.style.transition = "all 0.4s ease";
+      msg.style.opacity = "0";
+      msg.style.transform = "translate(-50%, -50%) scale(0.8)";
+      setTimeout(function () { msg.remove(); }, 400);
+    }, 3000);
   }
 
   // ── Map Integration ─────────────────────────────

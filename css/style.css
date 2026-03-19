@@ -126,6 +126,7 @@ html, body {
 /* ── Left: Scrollable Story Pane ── */
 
 .story-pane {
+  position: relative;
   width: 50%;
   height: 100vh;
   overflow-y: auto;
@@ -1077,4 +1078,366 @@ html, body {
 
 .chat-send:hover {
   transform: scale(1.05);
+}
+
+/* ============================================
+   Typewriter Effect
+   ============================================ */
+
+.typewriter-cursor {
+  display: inline-block;
+  color: var(--accent);
+  font-weight: 300;
+  animation: cursorBlink 0.75s step-end infinite;
+  margin-left: 2px;
+}
+
+.typewriter-cursor.done {
+  animation: cursorFade 0.6s ease forwards;
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes cursorFade {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ============================================
+   Play My Journey Button
+   ============================================ */
+
+.tour-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  border: none;
+  border-radius: 50px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 28px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.tour-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255,255,255,0.15), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.tour-btn:hover::before {
+  transform: translateX(100%);
+}
+
+.tour-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px var(--accent-glow);
+}
+
+.tour-btn.touring {
+  background: linear-gradient(135deg, var(--accent-orange), #e74c3c);
+  pointer-events: auto;
+}
+
+.tour-btn.touring i {
+  animation: none;
+}
+
+/* Tour progress overlay on map */
+.tour-progress {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  box-shadow: var(--shadow);
+  animation: slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tour-progress .tour-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes slideDown {
+  from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+/* ============================================
+   Animated Career Trail
+   ============================================ */
+
+.career-trail-segment {
+  transition: stroke-dashoffset 2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Trail marker dot at each waypoint */
+.trail-waypoint {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg-dark);
+  box-shadow: 0 0 10px var(--accent-glow);
+  transition: transform 0.4s ease, opacity 0.4s ease;
+  opacity: 0;
+  transform: scale(0);
+}
+
+.trail-waypoint.revealed {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ============================================
+   Confetti (Easter Egg)
+   ============================================ */
+
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 99999;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: -20px;
+  animation: confettiFall 3s ease-in forwards;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg) scale(0.3);
+    opacity: 0;
+  }
+}
+
+.easter-egg-msg {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  z-index: 100000;
+  padding: 32px 48px;
+  background: var(--bg-card-solid);
+  border: 2px solid var(--accent);
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 0 60px var(--accent-glow), var(--shadow);
+  animation: easterPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s forwards;
+  pointer-events: none;
+}
+
+.easter-egg-msg h3 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.easter-egg-msg p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+@keyframes easterPop {
+  from { transform: translate(-50%, -50%) scale(0) rotate(-10deg); }
+  to { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+}
+
+/* ============================================
+   Map Marker Popups
+   ============================================ */
+
+.geo-popup .leaflet-popup-content-wrapper {
+  background: var(--bg-card-solid);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  color: var(--text-primary);
+  padding: 0;
+}
+
+.geo-popup .leaflet-popup-content {
+  margin: 0;
+  font-family: var(--font-main);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.geo-popup .leaflet-popup-tip {
+  background: var(--bg-card-solid);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-left: none;
+}
+
+.geo-popup .leaflet-popup-close-button {
+  color: var(--text-muted) !important;
+  font-size: 18px !important;
+  top: 8px !important;
+  right: 10px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.geo-popup .leaflet-popup-close-button:hover {
+  color: var(--text-primary) !important;
+}
+
+.popup-inner {
+  padding: 16px 18px;
+}
+
+.popup-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.popup-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.popup-name {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.popup-role {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.popup-current {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 50px;
+  background: rgba(0, 212, 255, 0.12);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  color: var(--accent);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.popup-meta {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.popup-meta span {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.popup-meta i {
+  color: var(--accent);
+  font-size: 0.65rem;
+}
+
+.popup-highlights {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+}
+
+.popup-highlights li {
+  position: relative;
+  padding-left: 14px;
+  margin-bottom: 6px;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.popup-highlights li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.popup-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.popup-skill {
+  padding: 3px 9px;
+  border-radius: 5px;
+  background: rgba(0, 212, 255, 0.06);
+  border: 1px solid;
+  font-size: 0.66rem;
+  font-weight: 500;
 }

@@ -4,22 +4,26 @@
   window.map = null;
   var map;
   var markers = {};
-  var pathLine;
   let currentView = null;
   let currentTileLayer = null;
 
   var DARK_TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
   var LIGHT_TILES = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 
+  var trailSegments = [];
+  var isTourPlaying = false;
+
   // ── Initialization ──────────────────────────────
 
   function init() {
     initMap();
     addMarkers();
-    addPathLine();
+    addAnimatedTrail();
     setupScrollObserver();
     setupScrollProgress();
     setupThemeToggle();
+    startTypewriter();
+    setupTourButton();
   }
 
   // ── Leaflet Map ─────────────────────────────────
@@ -71,38 +75,137 @@
       });
 
       var marker = L.marker([lat, lon], { icon: icon }).addTo(map);
+      marker.bindPopup(buildPopupContent(p), {
+        className: "geo-popup",
+        maxWidth: 280,
+        minWidth: 220,
+        closeButton: true,
+        autoPan: true,
+      });
       markers[p.id] = { marker: marker, feature: f };
     });
   }
 
-  // ── Career Path Line ────────────────────────────
+  function buildPopupContent(p) {
+    var currentTag = p.isCurrent
+      ? '<span class="popup-current">Current Role</span>'
+      : '';
 
-  function addPathLine() {
+    var highlightsHtml = '';
+    if (p.highlights && p.highlights.length) {
+      highlightsHtml = '<ul class="popup-highlights">';
+      p.highlights.forEach(function (h) {
+        highlightsHtml += '<li>' + h + '</li>';
+      });
+      highlightsHtml += '</ul>';
+    }
+
+    var skillsHtml = '';
+    if (p.skills && p.skills.length) {
+      skillsHtml = '<div class="popup-skills">';
+      p.skills.forEach(function (s) {
+        skillsHtml += '<span class="popup-skill" style="border-color:' +
+          hexToRGBA(p.color, 0.4) + '; color:' + p.color + ';">' + s + '</span>';
+      });
+      skillsHtml += '</div>';
+    }
+
+    return '<div class="popup-inner">' +
+      '<div class="popup-header">' +
+        '<div class="popup-icon" style="background:' + hexToRGBA(p.color, 0.15) + '; color:' + p.color + ';">' +
+          '<i class="' + p.icon + '"></i>' +
+        '</div>' +
+        '<div>' +
+          '<div class="popup-name">' + p.name + '</div>' +
+          '<div class="popup-role">' + p.role + '</div>' +
+          currentTag +
+        '</div>' +
+      '</div>' +
+      '<div class="popup-meta">' +
+        '<span><i class="fas fa-calendar-alt"></i> ' + p.period + '</span>' +
+        '<span><i class="fas fa-map-pin"></i> ' + p.location + '</span>' +
+      '</div>' +
+      highlightsHtml +
+      skillsHtml +
+    '</div>';
+  }
+
+  // ── Animated Career Trail ───────────────────────
+
+  function addAnimatedTrail() {
     var sorted = CAREER_DATA.features.slice().sort(function (a, b) {
       return a.properties.order - b.properties.order;
     });
 
-    var latlngs = sorted.map(function (f) {
-      return [f.geometry.coordinates[1], f.geometry.coordinates[0]];
-    });
+    for (var i = 0; i < sorted.length - 1; i++) {
+      var from = sorted[i];
+      var to = sorted[i + 1];
+      var fromLL = [from.geometry.coordinates[1], from.geometry.coordinates[0]];
+      var toLL = [to.geometry.coordinates[1], to.geometry.coordinates[0]];
 
-    pathLine = L.polyline(latlngs, {
-      color: "#00d4ff",
-      weight: 2.5,
-      opacity: 0.35,
-      dashArray: "8, 14",
-      lineCap: "round",
-    }).addTo(map);
+      var segment = L.polyline([fromLL, toLL], {
+        color: to.properties.color,
+        weight: 3,
+        opacity: 0,
+        dashArray: "8, 12",
+        lineCap: "round",
+      }).addTo(map);
+
+      trailSegments.push({
+        line: segment,
+        toId: to.properties.id,
+        fromId: from.properties.id,
+        revealed: false
+      });
+    }
+  }
+
+  function revealTrailUpTo(targetId) {
+    var order = -1;
+    CAREER_DATA.features.forEach(function (f) {
+      if (f.properties.id === targetId) order = f.properties.order;
+    });
+    if (order <= 0) return;
+
+    trailSegments.forEach(function (seg) {
+      var toOrder = -1;
+      CAREER_DATA.features.forEach(function (f) {
+        if (f.properties.id === seg.toId) toOrder = f.properties.order;
+      });
+
+      if (toOrder <= order && !seg.revealed) {
+        seg.revealed = true;
+        animateSegmentReveal(seg.line);
+      }
+    });
+  }
+
+  function animateSegmentReveal(polyline) {
+    polyline.setStyle({ opacity: 0.7 });
 
     requestAnimationFrame(function tryAnimate() {
-      var el = pathLine.getElement();
+      var el = polyline.getElement();
       if (!el) { requestAnimationFrame(tryAnimate); return; }
-      var offset = 0;
-      (function step() {
-        offset -= 0.4;
-        el.style.strokeDashoffset = offset;
-        requestAnimationFrame(step);
-      })();
+
+      var length = el.getTotalLength ? el.getTotalLength() : 800;
+      el.style.strokeDasharray = length;
+      el.style.strokeDashoffset = length;
+      el.style.transition = "stroke-dashoffset 2s cubic-bezier(0.16, 1, 0.3, 1)";
+
+      requestAnimationFrame(function () {
+        el.style.strokeDashoffset = "0";
+      });
+
+      setTimeout(function () {
+        el.style.strokeDasharray = "8, 12";
+        el.style.transition = "none";
+        var offset = 0;
+        (function marchAnts() {
+          offset -= 0.3;
+          el.style.strokeDashoffset = offset;
+          requestAnimationFrame(marchAnts);
+        })();
+      }, 2200);
     });
   }
 
@@ -124,6 +227,7 @@
             entry.target.classList.add("section-active");
 
             flyToView(targetId);
+            revealTrailUpTo(targetId);
 
             if (targetId === "skills") {
               animateSkillBars();
@@ -142,8 +246,8 @@
 
   // ── Fly To Map View ─────────────────────────────
 
-  function flyToView(viewId) {
-    if (viewId === currentView) return;
+  function flyToView(viewId, force) {
+    if (!force && viewId === currentView) return;
     currentView = viewId;
 
     var view = MAP_VIEWS[viewId];
@@ -244,6 +348,149 @@
         currentTileLayer = L.tileLayer(url, { maxZoom: 19 }).addTo(map);
       }
     }
+  }
+
+  // ── Typewriter Effect ───────────────────────────
+
+  function startTypewriter() {
+    var nameEl = document.getElementById("hero-name");
+    var subtitleEl = document.getElementById("hero-subtitle");
+    var summaryEl = document.getElementById("hero-summary");
+    var cursorEl = document.querySelector(".typewriter-cursor");
+
+    if (!nameEl) return;
+
+    var nameText = nameEl.getAttribute("data-text") || "";
+    var subtitleText = subtitleEl ? subtitleEl.getAttribute("data-text") || "" : "";
+    var summaryText = summaryEl ? summaryEl.getAttribute("data-text") || "" : "";
+
+    nameEl.textContent = "";
+    if (subtitleEl) subtitleEl.textContent = "";
+    if (summaryEl) summaryEl.textContent = "";
+
+    typeText(nameEl, nameText, 80, function () {
+      typeText(subtitleEl, subtitleText, 40, function () {
+        typeText(summaryEl, summaryText, 15, function () {
+          if (cursorEl) cursorEl.classList.add("done");
+        });
+      });
+    });
+  }
+
+  function typeText(el, text, speed, callback) {
+    if (!el || !text) { if (callback) callback(); return; }
+    var i = 0;
+    function tick() {
+      if (i < text.length) {
+        el.textContent += text.charAt(i);
+        i++;
+        setTimeout(tick, speed);
+      } else {
+        if (callback) callback();
+      }
+    }
+    tick();
+  }
+
+  // ── Auto-Playing Career Tour ───────────────────
+
+  function setupTourButton() {
+    var btn = document.getElementById("tour-btn");
+    if (!btn) return;
+
+    btn.addEventListener("click", function () {
+      if (isTourPlaying) {
+        stopTour();
+      } else {
+        startTour();
+      }
+    });
+  }
+
+  var tourTimeouts = [];
+
+  function startTour() {
+    var btn = document.getElementById("tour-btn");
+    isTourPlaying = true;
+    btn.classList.add("touring");
+    btn.innerHTML = '<i class="fas fa-stop"></i> Stop Tour';
+
+    var storyPane = document.getElementById("story-pane");
+    var sections = document.querySelectorAll(".story-section");
+    var sectionArray = Array.prototype.slice.call(sections);
+
+    storyPane.scrollTo(0, 0);
+
+    var tourSteps = [
+      { idx: 0, label: "Introduction", delay: 500 },
+      { idx: 1, label: "About", delay: 4000 },
+      { idx: 2, label: "Amity University", delay: 8000 },
+      { idx: 3, label: "SISL Infotech", delay: 12000 },
+      { idx: 4, label: "Nascent Info Tech", delay: 16000 },
+      { idx: 5, label: "Jio Platforms", delay: 20000 },
+      { idx: 6, label: "Skills", delay: 24500 },
+      { idx: 7, label: "Certifications", delay: 28000 },
+      { idx: 8, label: "Contact", delay: 32000 }
+    ];
+
+    showTourProgress("Starting tour...");
+
+    tourSteps.forEach(function (step) {
+      var tid = setTimeout(function () {
+        if (!isTourPlaying) return;
+        var section = sectionArray[step.idx];
+        if (!section) return;
+
+        showTourProgress(step.label);
+
+        var paneRect = storyPane.getBoundingClientRect();
+        var sectionRect = section.getBoundingClientRect();
+        var scrollTarget = sectionRect.top - paneRect.top + storyPane.scrollTop;
+        storyPane.scrollTo({ top: scrollTarget, behavior: "smooth" });
+
+        var viewId = section.getAttribute("data-map");
+        if (viewId) {
+          flyToView(viewId, true);
+          revealTrailUpTo(viewId);
+        }
+      }, step.delay);
+      tourTimeouts.push(tid);
+    });
+
+    var endTid = setTimeout(function () {
+      if (isTourPlaying) stopTour();
+    }, 36000);
+    tourTimeouts.push(endTid);
+  }
+
+  function stopTour() {
+    isTourPlaying = false;
+    var btn = document.getElementById("tour-btn");
+    btn.classList.remove("touring");
+    btn.innerHTML = '<i class="fas fa-play"></i> Play My Journey';
+
+    tourTimeouts.forEach(function (tid) { clearTimeout(tid); });
+    tourTimeouts = [];
+
+    removeTourProgress();
+  }
+
+  function showTourProgress(label) {
+    var existing = document.getElementById("tour-progress");
+    if (existing) existing.remove();
+
+    var div = document.createElement("div");
+    div.id = "tour-progress";
+    div.className = "tour-progress";
+    div.innerHTML = '<span class="tour-dot"></span> <span>' + label + '</span>';
+
+    var mapPane = document.querySelector(".map-pane");
+    if (mapPane) mapPane.appendChild(div);
+  }
+
+  function removeTourProgress() {
+    var el = document.getElementById("tour-progress");
+    if (el) el.remove();
   }
 
   // ── Utilities ───────────────────────────────────
